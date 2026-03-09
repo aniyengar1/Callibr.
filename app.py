@@ -29,15 +29,39 @@ st.title("📈 QuantMarkets")
 st.subheader("Backtesting engine for prediction markets")
 st.markdown("---")
 
-@st.cache_data(ttl=3600)
+@st.cache_data(ttl=300)
 def load_data():
-    response = supabase.table("market_prices").select("*").execute()
-    df = pd.DataFrame(response.data)
-    if df.empty:
-        return df
+    # Fetch all data in batches to bypass 1000 row limit
+    all_rows = []
+    offset = 0
+    batch_size = 1000
+    
+    while True:
+        response = supabase.table("market_prices")\
+            .select("*")\
+            .order("timestamp", desc=False)\
+            .range(offset, offset + batch_size - 1)\
+            .execute()
+        
+        batch = response.data
+        if not batch:
+            break
+            
+        all_rows.extend(batch)
+        
+        if len(batch) < batch_size:
+            break
+            
+        offset += batch_size
+    
+    if not all_rows:
+        return pd.DataFrame()
+    
+    df = pd.DataFrame(all_rows)
     df["mid_price"] = pd.to_numeric(df["mid_price"], errors="coerce")
     df["category"] = df["event_ticker"].apply(categorize)
     return df
+
 
 df_raw = load_data()
 
