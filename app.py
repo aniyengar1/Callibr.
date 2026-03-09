@@ -3,6 +3,8 @@ import pandas as pd
 import matplotlib.pyplot as plt
 from supabase import create_client
 
+st.set_page_config(page_title="QuantMarkets", page_icon="📈", layout="wide")
+
 SUPABASE_URL = st.secrets["SUPABASE_URL"]
 SUPABASE_KEY = st.secrets["SUPABASE_KEY"]
 
@@ -23,7 +25,6 @@ def categorize(question):
     else:
         return "Other"
 
-st.set_page_config(page_title="QuantMarkets", page_icon="📈", layout="wide")
 st.title("📈 QuantMarkets")
 st.subheader("Backtesting engine for prediction markets")
 st.markdown("---")
@@ -44,7 +45,6 @@ if df_raw.empty:
     st.warning("No data yet.")
     st.stop()
 
-# Get first and latest snapshot per market
 df_first = df_raw.sort_values("timestamp").groupby("ticker").first().reset_index()
 df_latest = df_raw.sort_values("timestamp").groupby("ticker").last().reset_index()
 df_latest = df_latest.rename(columns={"mid_price": "current_price"})
@@ -52,7 +52,6 @@ df_markets = df_first.merge(df_latest[["ticker", "current_price"]], on="ticker")
 df_markets["price_change"] = (df_markets["current_price"] - df_markets["mid_price"]).round(4)
 df_markets["price_change_pct"] = ((df_markets["price_change"] / df_markets["mid_price"]) * 100).round(2)
 
-# Sidebar
 st.sidebar.title("Filters")
 min_prob = st.sidebar.slider("Min opening probability", 0.0, 1.0, 0.05, 0.05)
 max_prob = st.sidebar.slider("Max opening probability", 0.0, 1.0, 0.95, 0.05)
@@ -66,7 +65,6 @@ st.sidebar.metric("Total snapshots", len(df_raw))
 st.sidebar.metric("Unique markets", df_raw["ticker"].nunique())
 st.sidebar.metric("Last updated", df_raw["timestamp"].max()[:16])
 
-# Apply filters
 df = df_markets.copy()
 df = df[(df["mid_price"] >= min_prob) & (df["mid_price"] <= max_prob)]
 if category_filter != "All":
@@ -75,7 +73,6 @@ if category_filter != "All":
 sort_map = {"Opening Price": "mid_price", "Current Price": "current_price", "Price Change": "price_change", "Close Date": "close_time"}
 df = df.sort_values(sort_map[sort_by], ascending=False).reset_index(drop=True)
 
-# Metrics
 st.markdown("## 📊 Market Overview")
 col1, col2, col3, col4 = st.columns(4)
 col1.metric("Markets tracked", len(df))
@@ -84,7 +81,6 @@ col3.metric("Biggest mover", f"{df['price_change_pct'].abs().max():.1f}%")
 col4.metric("Categories", df["category"].nunique())
 st.markdown("---")
 
-# Charts
 col_left, col_right = st.columns(2)
 
 with col_left:
@@ -110,7 +106,6 @@ with col_right:
 
 st.markdown("---")
 
-# Top movers
 st.subheader("🔥 Biggest Price Movers")
 top_movers = df_markets.nlargest(10, "price_change_pct")[["event_ticker", "category", "mid_price", "current_price", "price_change_pct"]]
 top_movers.columns = ["Market", "Category", "Opening Price", "Current Price", "Change %"]
@@ -118,7 +113,6 @@ st.dataframe(top_movers.reset_index(drop=True), use_container_width=True)
 
 st.markdown("---")
 
-# Market browser
 st.subheader("📋 Market Browser")
 display_df = df[["category", "event_ticker", "mid_price", "current_price", "price_change_pct", "close_time"]].copy()
 display_df.columns = ["Category", "Market", "Opening Price", "Current Price", "Change %", "Closes"]
