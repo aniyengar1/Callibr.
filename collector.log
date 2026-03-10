@@ -101,3 +101,80 @@ Fetching Polymarket markets...
 Polymarket: 500 valid markets
 Saved 500 rows to CSV
 Saved 500 rows to Supabase
+
+Running collector at 2026-03-09 16:00:05
+Fetching Kalshi live markets...
+  Kalshi live: 394 valid markets (606 skipped)
+Fetching Kalshi historical markets...
+  Kalshi historical: 500 valid markets (0 skipped)
+Fetching Polymarket markets...
+  Polymarket: 500 valid markets
+
+Total rows collected: 1394
+Saved 1394 rows to CSV
+Saved 1394 rows to Supabase
+
+Running collector at 2026-03-09 17:00:04
+Fetching Kalshi live markets...
+  Kalshi live: 620 valid markets (380 skipped)
+Fetching Kalshi historical markets...
+  Kalshi historical HTTP 429: {"error":{"code":"too_many_requests","message":"too many requests"}}
+  Kalshi historical: 0 valid markets (0 skipped)
+Fetching Polymarket markets...
+  Polymarket: 500 valid markets
+
+Total rows collected: 1120
+Saved 1120 rows to CSV
+Saved 1120 rows to Supabase
+
+Running collector at 2026-03-09 19:00:03
+Fetching Kalshi live markets...
+  Kalshi live: 824 valid markets (176 skipped)
+Fetching Kalshi historical markets...
+  Kalshi historical: 500 valid markets (0 skipped)
+Fetching Polymarket markets...
+  Polymarket: 500 valid markets
+
+Total rows collected: 1824
+Saved 1824 rows to CSV
+Saved 1824 rows to Supabase
+
+Running collector at 2026-03-09 20:04:44
+Fetching Kalshi live markets...
+  Kalshi live error: HTTPSConnectionPool(host='api.elections.kalshi.com', port=443): Max retries exceeded with url: /trade-api/v2/markets?limit=100&status=open&mve_filter=exclude (Caused by NameResolutionError("<urllib3.connection.HTTPSConnection object at 0x1442dbcb0>: Failed to resolve 'api.elections.kalshi.com' ([Errno 8] nodename nor servname provided, or not known)"))
+  Kalshi live: 0 valid markets (0 skipped)
+Fetching Kalshi historical markets...
+  Kalshi historical error: HTTPSConnectionPool(host='api.elections.kalshi.com', port=443): Max retries exceeded with url: /trade-api/v2/historical/markets?limit=100&mve_filter=exclude (Caused by NameResolutionError("<urllib3.connection.HTTPSConnection object at 0x144253b10>: Failed to resolve 'api.elections.kalshi.com' ([Errno 8] nodename nor servname provided, or not known)"))
+  Kalshi historical: 0 valid markets (0 skipped)
+Fetching Polymarket markets...
+Polymarket error: HTTPSConnectionPool(host='gamma-api.polymarket.com', port=443): Max retries exceeded with url: /markets?limit=100&offset=0&active=true&closed=false (Caused by NameResolutionError("<urllib3.connection.HTTPSConnection object at 0x144368cd0>: Failed to resolve 'gamma-api.polymarket.com' ([Errno 8] nodename nor servname provided, or not known)"))
+  Polymarket: 0 valid markets
+
+Total rows collected: 0
+No rows to save.
+
+Running collector at 2026-03-09 22:00:04
+Fetching Kalshi live markets...
+  Kalshi live HTTP 429: {"error":{"code":"too_many_requests","message":"too many requests"}}
+  Kalshi live: 678 valid markets (222 skipped)
+Fetching Kalshi historical markets...
+  Kalshi historical HTTP 429: {"error":{"code":"too_many_requests","message":"too many requests"}}
+  Kalshi historical: 100 valid markets (0 skipped)
+Fetching Polymarket markets...
+  Polymarket: 500 valid markets
+
+Total rows collected: 1278
+Saved 1278 rows to CSV
+Saved 1278 rows to Supabase
+
+Running collector at 2026-03-09 23:00:03
+Fetching Kalshi live markets...
+  Kalshi live: 829 valid markets (171 skipped)
+Fetching Kalshi historical markets...
+  Kalshi historical: 500 valid markets (0 skipped)
+Fetching Polymarket markets...
+  Polymarket: 500 valid markets
+
+Total rows collected: 1829
+Saved 1829 rows to CSV
+Saved 1829 rows to Supabase
