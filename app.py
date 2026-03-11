@@ -1130,12 +1130,9 @@ with tab4:
             edge = int(row["edge_score"])
 
             with st.spinner("Fetching news and generating analysis..."):
-                # Build smart news query
-                news_query = build_news_query(row["event_ticker"], row["category"])
-                news = fetch_news(news_query, max_articles=5)
-
-                # Generate AI research
-                research = generate_market_research(
+                news_query   = build_news_query(row["event_ticker"], row["category"])
+                news         = fetch_news(news_query, max_articles=5)
+                research     = generate_market_research(
                     market_title    = row["event_ticker"],
                     current_price   = row["current_price"],
                     category        = row["category"],
@@ -1143,16 +1140,20 @@ with tab4:
                     price_change_pct= row["price_change_pct"],
                     news_headlines  = news,
                 )
-
-                # Fetch sports stats if applicable
                 sports_stats = detect_entity_and_fetch_stats(row["event_ticker"], row["category"])
 
-            # Render research card
-            st.markdown(render_research_card(row, research, news, edge, df_markets), unsafe_allow_html=True)
+            # Store in session state so tab doesn't switch on rerender
+            st.session_state["research_card"]  = render_research_card(row, research, news, edge, df_markets)
+            st.session_state["research_sports"] = render_stats_card(sports_stats) if sports_stats else ""
 
-            # Sports stats below card
-            if sports_stats:
-                st.markdown(render_stats_card(sports_stats), unsafe_allow_html=True)
+        # Render from session state — persists without jumping tabs
+        if "research_card" in st.session_state:
+            st.markdown(st.session_state["research_card"], unsafe_allow_html=True)
+            if st.session_state.get("research_sports"):
+                st.markdown(st.session_state["research_sports"], unsafe_allow_html=True)
+            if st.button("Clear research", key="clear_research"):
+                del st.session_state["research_card"]
+                del st.session_state["research_sports"]
 
     else:
         if search_query.strip():
