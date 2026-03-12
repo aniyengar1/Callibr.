@@ -562,12 +562,10 @@ if df_raw.empty:
 
 df_poly_raw   = df_raw[df_raw["source"] == "polymarket"]
 df_kalshi_raw = df_raw[df_raw["source"] == "kalshi"]
-df_hist_raw   = df_raw[df_raw["source"] == "kalshi_historical"]
 df_live_raw   = df_raw[df_raw["source"].isin(["polymarket","kalshi"])]
 
 df_poly_markets   = build_markets_df(df_poly_raw)   if not df_poly_raw.empty   else pd.DataFrame()
 df_kalshi_markets = build_markets_df(df_kalshi_raw)  if not df_kalshi_raw.empty  else pd.DataFrame()
-df_hist_markets   = build_markets_df(df_hist_raw)   if not df_hist_raw.empty   else pd.DataFrame()
 df_markets        = build_markets_df(df_live_raw)
 
 # ── sidebar ───────────────────────────────────────────────────────────────────
@@ -583,8 +581,8 @@ for src in ["polymarket","kalshi","kalshi_historical"]:
     st.sidebar.markdown(f"{SOURCE_LABELS[src]}: **{n:,}** markets")
 
 # ── tabs ──────────────────────────────────────────────────────────────────────
-tab1, tab2, tab3, tab4 = st.tabs([
-    "📊 Overview", "🔀 Sources", "📚 Resolved", "🔍 Market Research"
+tab1, tab4, tab2 = st.tabs([
+    "📊 Overview", "🔍 Market Research", "🔀 Sources"
 ])
 
 # ─────────────────────────────────────────────────────────────────────────────
@@ -783,48 +781,8 @@ with tab2:
     source_panel(lc, df_poly_markets,   "🟣 Polymarket",    SOURCE_COLORS["polymarket"])
     source_panel(rc, df_kalshi_markets, "🔵 Kalshi (live)", SOURCE_COLORS["kalshi"])
 
-# ─────────────────────────────────────────────────────────────────────────────
-# TAB 3 — RESOLVED
-# ─────────────────────────────────────────────────────────────────────────────
-with tab3:
-    st.markdown("## Kalshi Resolved Markets")
-    if df_hist_markets.empty:
-        st.info("No resolved Kalshi markets collected yet.")
-    else:
-        h1,h2,h3,h4 = st.columns(4)
-        h1.metric("Resolved markets",     f"{len(df_hist_markets):,}")
-        h2.metric("Settled YES (≥0.9)",   len(df_hist_markets[df_hist_markets["current_price"]>=0.9]))
-        h3.metric("Settled NO (≤0.1)",    len(df_hist_markets[df_hist_markets["current_price"]<=0.1]))
-        h4.metric("Avg settlement price", f"{df_hist_markets['current_price'].mean():.2%}")
-
-        hc1, hc2 = st.columns(2)
-        with hc1:
-            bins  = [0,.1,.2,.3,.4,.5,.6,.7,.8,.9,1.0]
-            blabs = ["0-10%","10-20%","20-30%","30-40%","40-50%","50-60%","60-70%","70-80%","80-90%","90-100%"]
-            hb = pd.cut(df_hist_markets["current_price"], bins=bins, labels=blabs).value_counts().sort_index().reset_index()
-            hb.columns = ["Bucket","Count"]
-            fig_h = px.bar(hb, x="Bucket", y="Count", color_discrete_sequence=[SOURCE_COLORS["kalshi_historical"]])
-            fig_h.update_traces(hovertemplate="<b>%{x}</b><br>%{y} markets<extra></extra>")
-            apply_layout(fig_h, "Settlement Price Distribution")
-            st.plotly_chart(fig_h, use_container_width=True)
-
-        with hc2:
-            hcats = df_hist_markets["category"].value_counts().reset_index()
-            hcats.columns = ["Category","Count"]
-            fig_hc = px.bar(hcats, x="Count", y="Category", orientation="h",
-                            color_discrete_sequence=[SOURCE_COLORS["kalshi_historical"]])
-            fig_hc.update_traces(hovertemplate="<b>%{y}</b><br>%{x} markets<extra></extra>")
-            apply_layout(fig_hc, "Resolved Markets by Category")
-            st.plotly_chart(fig_hc, use_container_width=True)
-
-        st.markdown("##### Most Recently Resolved")
-        hd = df_hist_markets.sort_values("close_time", ascending=False).head(20)[
-            ["event_ticker","category","mid_price","current_price","close_time"]].copy()
-        hd.columns = ["Market","Category","Entry Price","Settlement Price","Closed"]
-        st.dataframe(hd.reset_index(drop=True), use_container_width=True)
 
 
-# ─────────────────────────────────────────────────────────────────────────────
 # ─────────────────────────────────────────────────────────────────────────────
 # EDGE SCORE + NEWS + RESEARCH CARD FUNCTIONS
 # ─────────────────────────────────────────────────────────────────────────────
@@ -1081,8 +1039,16 @@ Assess this market now."""
         result.setdefault("narrative_flag", False)
         result.setdefault("narrative_flag_reason", "")
         return result
-    except Exception:
-        return None
+    except requests.exceptions.Timeout:
+        return {"_error": "API request timed out (>30s). Try again."}
+    except requests.exceptions.HTTPError as e:
+        status = e.response.status_code if e.response is not None else "?"
+        body   = e.response.text[:300] if e.response is not None else ""
+        return {"_error": f"HTTP {status}: {body}"}
+    except json.JSONDecodeError as e:
+        return {"_error": f"JSON parse failed: {e}. Raw: {text[:300]}"}
+    except Exception as e:
+        return {"_error": f"{type(e).__name__}: {e}"}
 
 def render_research_card(row, research, news, edge_score, df_all):
     """Render full market research card HTML."""
@@ -1346,6 +1312,11 @@ with tab4:
                     news_headlines  = news,
                 )
                 sports_stats = detect_entity_and_fetch_stats(row["event_ticker"], row["category"])
+
+            # Surface API errors visibly instead of silently failing
+            if research and research.get("_error"):
+                st.error(f"⚠️ AI verdict failed: {research['_error']}")
+                research = None
 
             # Store in session state so tab doesn't switch on rerender
             st.session_state["research_card"]  = render_research_card(row, research, news, edge, df_markets)
