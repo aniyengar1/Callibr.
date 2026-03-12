@@ -606,16 +606,19 @@ with tab1:
     df = df.sort_values(sort_map[sort_by], ascending=False).reset_index(drop=True)
 
     st.markdown("---")
+    # Split upcoming vs long-term for accurate metrics
+    df_upcoming = df[df["days_to_close"].between(0, 30)]
+    df_longterm  = df[df["days_to_close"] > 30]
     c1,c2,c3,c4 = st.columns(4)
-    c1.metric("Markets tracked",   f"{len(df):,}")
-    c2.metric("Avg opening price", f"{df['mid_price'].mean():.2%}")
-    c3.metric("Biggest mover",     f"{df['price_change_pct'].abs().max():.1f}%")
-    c4.metric("Categories",        df["category"].nunique())
+    c1.metric("Markets tracked",      f"{len(df):,}")
+    c2.metric("Closing ≤30 days",     f"{len(df_upcoming):,}")
+    c3.metric("Biggest mover",        f"{df['price_change_pct'].abs().max():.0f}%" if not df.empty else "N/A")
+    c4.metric("Categories",           df["category"].nunique())
     c5,c6,c7,c8 = st.columns(4)
-    c5.metric("Avg current price",   f"{df['current_price'].mean():.2%}")
-    c6.metric("Markets moving up",   f"{len(df[df['price_change']>0]):,}")
-    c7.metric("Markets moving down", f"{len(df[df['price_change']<0]):,}")
-    c8.metric("Avg days to close",   f"{df['days_to_close'].mean():.0f}d" if df["days_to_close"].notna().any() else "N/A")
+    c5.metric("Avg current price",    f"{df['current_price'].mean():.2%}")
+    c6.metric("Avg days (upcoming)",  f"{df_upcoming['days_to_close'].mean():.0f}d" if not df_upcoming.empty else "N/A")
+    c7.metric("Avg days (long-term)", f"{df_longterm['days_to_close'].mean():.0f}d" if not df_longterm.empty else "N/A")
+    c8.metric("Markets moving",       f"↑{len(df[df['price_change']>0]):,} ↓{len(df[df['price_change']<0]):,}")
 
     st.markdown("---")
     st.markdown("### Prediction Market Intelligence")
