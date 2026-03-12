@@ -782,6 +782,69 @@ with tab3:
 # EDGE SCORE + NEWS + RESEARCH CARD FUNCTIONS
 # ─────────────────────────────────────────────────────────────────────────────
 
+def enrich_title_with_context(title, ticker, close_time):
+    """
+    Parse Kalshi event_ticker to extract opponent/game context and append to title.
+    Patterns: KXLUKA-26MAR12-LAL-BOS → "(vs BOS · 12 Mar)"
+              KXLEBRON-26MAR15-MIA → "(vs MIA · 15 Mar)"
+              KXCL-26MAR12-ARSENAL-PSG → "(Arsenal vs PSG · 12 Mar)"
+    """
+    import re
+    if not ticker or not isinstance(ticker, str):
+        return title
+
+    # Already has opponent in title
+    if " vs " in title.lower() or "against" in title.lower():
+        return title
+
+    # Parse date from ticker — pattern: 26MAR12 = Mar 12 2026
+    date_str = ""
+    date_match = re.search(r'\d{2}(JAN|FEB|MAR|APR|MAY|JUN|JUL|AUG|SEP|OCT|NOV|DEC)(\d{2})', ticker.upper())
+    if date_match:
+        month = date_match.group(1)
+        day   = date_match.group(2)
+        date_str = f"{int(day)} {month.capitalize()}"
+
+    # Extract team abbreviations after the date — e.g. LAL-BOS, MIA, ARSENAL-PSG
+    parts = ticker.upper().split("-")
+    # Find date part index
+    date_idx = None
+    for i, p in enumerate(parts):
+        if re.search(r'(JAN|FEB|MAR|APR|MAY|JUN|JUL|AUG|SEP|OCT|NOV|DEC)', p):
+            date_idx = i
+            break
+
+    teams = []
+    if date_idx is not None:
+        # Everything after the date segment is team info
+        team_parts = parts[date_idx+1:]
+        # Filter out option suffixes (single words like WHAT, YES, NO, TRIA etc)
+        known_suffixes = {"WHAT","YES","NO","TRIA","TRAI","OVER","UNDER","MORE","LESS","WIN","LOSE"}
+        teams = [p for p in team_parts if p not in known_suffixes and len(p) >= 2 and len(p) <= 8]
+
+    if not teams and not date_str:
+        return title
+
+    if len(teams) == 2:
+        context = f"({teams[0]} vs {teams[1]}"
+    elif len(teams) == 1:
+        context = f"(vs {teams[0]}"
+    else:
+        context = f"("
+
+    if date_str:
+        if context == "(":
+            context = f"({date_str})"
+        else:
+            context += f" · {date_str})"
+    else:
+        if context != "(":
+            context += ")"
+        else:
+            return title
+
+    return f"{title} {context}"
+
 def compute_edge_score(row, df_all):
     """
     Edge Score 0-100. Higher = more likely mispriced / worth researching.
@@ -1114,6 +1177,9 @@ with tab4:
         display_df["Source"] = display_df["source"].map(SOURCE_LABELS).fillna(display_df["source"])
 
         display_df["Closes"] = pd.to_datetime(display_df["close_time"], errors="coerce", utc=True).dt.strftime("%-d %b")
+        display_df["event_ticker"] = display_df.apply(
+            lambda r: enrich_title_with_context(r["event_ticker"], r["ticker"], r.get("close_time","")), axis=1
+        )
         tbl = display_df[["event_ticker", "category", "Source", "Probability", "Closes", "Change", "Edge"]].copy()
         tbl.columns = ["Market", "Category", "Source", "Probability", "Closes", "Change", "Edge Score"]
         st.write(tbl.to_html(escape=False, index=False), unsafe_allow_html=True)
