@@ -370,7 +370,7 @@ def save_rows(rows):
     df = df.drop_duplicates(subset=["ticker", "timestamp"])
     rows = df.to_dict("records")
 
-    if os.path.exists(OUTPUT_FILE):
+    if os.path.exists(os.path.dirname(OUTPUT_FILE)):
         df.to_csv(OUTPUT_FILE, mode="a", header=False, index=False)
     else:
         df.to_csv(OUTPUT_FILE, mode="w", header=True, index=False)
